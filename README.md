@@ -1,8 +1,8 @@
 # UDP_server_client
 
 1. To compile packages run the following commands:
-g++ udp_server.cpp -o udp_server
-g++ udp_client.cpp -o udp_client
+```g++ udp_server.cpp -o udp_server```
+```g++ udp_client.cpp -o udp_client```
 
 To test multiple client connections: 
 
