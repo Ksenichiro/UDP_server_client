@@ -40,7 +40,7 @@ private:
     // Improvment TODO: BITWISE NOT SPACED UNIQUE GENERATION
 
     double generateRandomDouble(double max);
-    // Cheap uniqness || alternative O(n) space complexity unordered_map generation
+    // Cheap uniqness || alternative? unordered_map generation
     std::vector<double> generateLargeArray(double base);
 
     void sendArrayMetadata(int sockfd, sockaddr_in& clientAddr, socklen_t len, const std::vector<double>& array);
@@ -82,8 +82,6 @@ int main() {
         return 1;
     }
 
-
-    
 }
 
 
@@ -245,6 +243,9 @@ void Server::handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, con
         std::string version = command.substr(13);
         logger.log("Client " + clientKey + " established connection. Version: "+version, Logger::INFO);
         logger.log("Client " + clientKey + " established connection. Value of data: "+command.substr(5, 7), Logger::INFO); //TODO switch magic number 1`000`000 to value param
+        std::string versionServer = "1.0";     // Chage to global constant
+        std::string initAckn = "ACKN "+versionServer;
+        sendto(sockfd, initAckn.c_str(), initAckn.size() + 1, 0, (sockaddr*)&clientAddr, len);
 
     } else if (command.find("REQUEST_ARRAY") == 0) {
 
@@ -279,8 +280,8 @@ void Server::handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, con
 
         // TODO 
 
-        std::string filename ="server_data_for_" + clientKey + ".csv";
-        saveVectorToCSV(clientData[clientKey], filename);
+        //std::string filename ="server_data_for_" + clientKey + ".csv";
+        //saveVectorToCSV(clientData[clientKey], filename);
         clientData.erase(clientKey);
         
         //std::cout << "Client confirmed receipt. Array removed.\n";

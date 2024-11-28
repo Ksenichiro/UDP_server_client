@@ -8,9 +8,12 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-
+#include <fstream>
+#include <sstream>
+#include <map>
 #include "logger.h"
 
+std::map<std::string, std::string> parseConfigFile(const std::string& filename);
 void saveVectorToBinary(const std::vector<double>& vec, const std::string& filename);
 
 class Client {
@@ -34,21 +37,44 @@ int main(int argc, char* argv[]) {
     logger.log("Starting client logger...", Logger::INFO);
     logger.setLogFile("client.log");
 
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <server_ip> <number>\n";
-        return 1;
-    }
+    std::string configFileName = "client_config.txt";
+    std::map<std::string, std::string> config = parseConfigFile(configFileName);
 
-    std::string serverIp = argv[1];
-    int number = std::atoi(argv[2]);
+    // if (argc != 3) {
+    //     std::cerr << "Usage: " << argv[0] << " <server_ip> <number>\n";
+    //     return 1;
+    // }
+    int port = std::stoi(config["port"]);
+    std::string serverIp = config["ip"];
+    int number = std::stoi(config["init_value"]);
 
-    Client client(serverIp, 8080); // Use port 8080 for the server
+    Client client(serverIp, port); // Use port 8080 for the server
     client.sendAndReceive(number);
 
     return 0;
 }
 
 
+std::map<std::string, std::string> parseConfigFile(const std::string& filename) {
+    std::map<std::string, std::string> config;
+    std::ifstream file(filename);
+    
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + filename);
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream lineStream(line);
+        std::string key, value;
+
+        if (std::getline(lineStream, key, '=') && std::getline(lineStream, value)) {
+            config[key] = value;
+        }
+    }
+
+    return config;
+}
 
 void saveVectorToBinary(const std::vector<double>& vec, const std::string& filename) {
     // Open the file in binary mode
@@ -85,6 +111,7 @@ void Client::sendAndReceive(int number) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(serverPort);
     inet_pton(AF_INET, serverIp.c_str(), &serverAddr.sin_addr);
+    socklen_t len = sizeof(serverAddr);
 
     // Request the array
     //std::string request = "REQUEST_CHUNK " + std::to_string(chunkIndex);
@@ -94,9 +121,20 @@ void Client::sendAndReceive(int number) {
     std::string version = "1.0";
     std::string value = "1000000 ";        
     std::string initReq = "INIT "+value+version;
-
     sendto(sockfd, initReq.c_str(), initReq.size() + 1, 0, (const sockaddr*)&serverAddr, sizeof(serverAddr));
 
+    char buffer[256];
+    ssize_t n = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &len); 
+
+    buffer[n] = '\0'; 
+    std::string responce(buffer);
+    std::string versionServer  = responce.substr(5);
+    std::cout<<responce;
+    logger.log("Server version "+versionServer, Logger::INFO);
+    if (versionServer != version) {
+        logger.log("VERSION PROTOCOL DIFFERENCE", Logger::ERROR);
+        return;
+    }
     //TO DO TIMEOUT 3 SEC
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
@@ -108,7 +146,6 @@ void Client::sendAndReceive(int number) {
     const std::chrono::seconds timeoutDuration(5);
     auto startTime = std::chrono::steady_clock::now();
 
-    socklen_t len = sizeof(serverAddr);
 
     while(partSize == 0 || totalParts == 0)
     {
