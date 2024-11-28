@@ -52,7 +52,26 @@ private:
     void handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, const std::string& command); 
 };
 
-//--------------------------------MAIN-----------------------------------------//
+// class ClientHandler {
+// public:
+//     virtual ~ClientHandler() = default;
+//     virtual void handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, const std::string& command);
+// };
+
+// class ClientHandlerV1 : public ClientHandler {
+// public:
+//     void handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, const std::string& command);
+// };
+
+// std::unique_ptr<ClientHandler> getClientHandler(const std::string& version) {
+//     if (version == "1.0") {
+//         return std::make_unique<ClientHandlerV1>();
+//     } else {
+//         // Room for adding another versions
+//         return std::make_unique<ClientHandlerV1>();
+//     }
+// }
+
 
 
 
@@ -69,7 +88,6 @@ int main() {
         // Parse the configuration file
         std::map<std::string, std::string> config = parseConfigFile(configFileName);
 
-        // Extract parameters
         int port = std::stoi(config["port"]);
         //int initValue = std::stoi(config["init_value"]);
 
@@ -84,9 +102,6 @@ int main() {
 
 }
 
-
-
-//-------------------------------------------------------------------------//
 
 void saveVectorToCSV(const std::vector<double>& data, const std::string& filename) {
     Logger& logger = Logger::getInstance();
@@ -114,7 +129,7 @@ void saveVectorToCSV(const std::vector<double>& data, const std::string& filenam
     }
 }
 
-//-------------------------------------------------------------------------//
+
 void Server::start() {
     
     Logger& logger = Logger::getInstance();
@@ -159,7 +174,6 @@ void Server::start() {
     close(sockfd);
 }
 
-//-------------------------------------------------------------------------//
 
 double Server::generateRandomDouble(double max) {
     // Generate a random double in the range [0, x]
@@ -170,8 +184,6 @@ double Server::generateRandomDouble(double max) {
     return test;
 }
 
-//-------------------------------------------------------------------------//
-
 void Server::sendArrayMetadata(int sockfd, sockaddr_in& clientAddr, socklen_t len, const std::vector<double>& array) {
     const size_t MAX_PART_SIZE = 1000;
     size_t totalParts = (array.size() + MAX_PART_SIZE - 1) / MAX_PART_SIZE;
@@ -180,8 +192,6 @@ void Server::sendArrayMetadata(int sockfd, sockaddr_in& clientAddr, socklen_t le
     sendto(sockfd, &MAX_PART_SIZE, sizeof(MAX_PART_SIZE), 0, (sockaddr*)&clientAddr, len);
     std::cout << "Array metadata sent.\n";
 }
-
-//-------------------------------------------------------------------------//
 
 std::vector<double> Server::generateLargeArray(double base) {
 
@@ -198,8 +208,6 @@ std::vector<double> Server::generateLargeArray(double base) {
     return array;
 }
 
-//-------------------------------------------------------------------------//
-
 void Server::sendChunk(int sockfd, sockaddr_in& clientAddr, socklen_t len, const std::vector<double>& array, size_t chunkIndex) {
     const size_t MAX_PART_SIZE = 1000;
     size_t start = chunkIndex * MAX_PART_SIZE;
@@ -215,8 +223,6 @@ void Server::sendChunk(int sockfd, sockaddr_in& clientAddr, socklen_t len, const
     logger.log("Chunk " + std::to_string(chunkIndex)+" sent.", Logger::INFO);
 }
 
-//-------------------------------------------------------------------------//
-
 double Server::calculateChecksum(const std::vector<double>& part) {
     double checksum = 0;
     for (const auto& val : part) {
@@ -224,8 +230,6 @@ double Server::calculateChecksum(const std::vector<double>& part) {
     }
     return checksum;
 }
-
-//-------------------------------------------------------------------------//
 
 void Server::handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, const std::string& command) {
     std::string clientKey = getClientKey(clientAddr);
@@ -278,8 +282,6 @@ void Server::handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, con
     } else if (command == "CONFIRM_RECEIPT") {
         std::lock_guard<std::mutex> lock(dataMutex);
 
-        // TODO 
-
         //std::string filename ="server_data_for_" + clientKey + ".csv";
         //saveVectorToCSV(clientData[clientKey], filename);
         clientData.erase(clientKey);
@@ -289,7 +291,6 @@ void Server::handleClient(int sockfd, sockaddr_in clientAddr, socklen_t len, con
     }
 }
 
-//-------------------------------------------------------------------------//
 
 std::map<std::string, std::string> parseConfigFile(const std::string& filename) {
     std::map<std::string, std::string> config;
